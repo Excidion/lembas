@@ -1,4 +1,3 @@
-from atexit import unregister
 from telegram.ext import Application, MessageHandler, CommandHandler, ConversationHandler, filters, PicklePersistence
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from dotenv import load_dotenv
@@ -51,8 +50,9 @@ async def start_registration(update, context):
 
 async def get_email(update, context):
     response = update.message.text
+    await update.message.reply_text(f"You should now recieve an email from TGTG to your inbox ({response}).")
+    await update.message.reply_text("Please click on the link in the email to confirm you are the rightful owner of the account.")
     try:
-        await update.message.reply_text("If everything worked out you should have an email in your inbox from TGTG. Please click on the link in it to confirm your login.")
         credentials = TgtgClient(email=response).get_credentials()
     except Exception as e:
         await update.message.reply_text(e)
