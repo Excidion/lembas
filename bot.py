@@ -17,32 +17,32 @@ async def start(update, context):
         "/register - connect your TGTG account",
         "/unregister - disconnect your TGTG account",
         "These commands will help you get food:",
-        "/favs - Display currently avialable offers from your favourites.",
+        "/favs - Display currently available offers from your favorites.",
     ])
     await update.message.reply_text(message)
 
 
-async def show_avialable_favourites(update, context):
+async def show_avialable_favorites(update, context):
     client = context.user_data.get("client")
     items = client.get_items()
     for item in items:
         items_available = item["items_available"]
         if items_available > 0:
             store_name = item["store"]["store_name"]
-            store_adress = item["store"]["store_location"]["address"]["address_line"]
+            store_address = item["store"]["store_location"]["address"]["address_line"]
             item_name = item["item"]["name"]
             item_category = item["item"]["item_category"]
             item_price = item["item"]["price_including_taxes"]["minor_units"] / (10**item["item"]["price_including_taxes"]["decimals"])
             await update.message.reply_text(f"{store_name} has {items_available} {item_name or item_category} avaiable for {item_price}€ each.")
             pickup_start = item["pickup_interval"]["start"]
             pickup_end = item["pickup_interval"]["end"]
-            await update.message.reply_text(f"You can pick it up at {store_adress} from {pickup_start} to {pickup_end}")
+            await update.message.reply_text(f"You can pick it up at {store_address} from {pickup_start} to {pickup_end}")
         
 
 async def start_registration(update, context):
     email = context.user_data.get("registration_email")
     if email is None:
-        await update.message.reply_text("Wich email adress did you use to register at TGTG?")
+        await update.message.reply_text("Which email address did you use to register at TGTG?")
         return 0
     else:
         await update.message.reply_text(f"You are already registered with {email}. Please /unregister first.")
@@ -50,7 +50,7 @@ async def start_registration(update, context):
 
 async def get_email(update, context):
     response = update.message.text
-    await update.message.reply_text(f"You should now recieve an email from TGTG to your inbox ({response}).")
+    await update.message.reply_text(f"You should now receive an email from TGTG to your inbox ({response}).")
     await update.message.reply_text("Please click on the link in the email to confirm you are the rightful owner of the account.")
     try:
         credentials = TgtgClient(email=response).get_credentials()
@@ -62,7 +62,7 @@ async def get_email(update, context):
         context.user_data["registration_email"] = response
         client = TgtgClient(**credentials, access_token_lifetime = 3600)
         context.user_data["client"] = client
-        await update.message.reply_text("Registration successfull!")
+        await update.message.reply_text("Registration successful!")
         return ConversationHandler.END
 
 async def cancel(update, context):
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     builder.persistence(persistence = PicklePersistence(filepath = "storage.pkl"))
     app = builder.build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("favs", show_avialable_favourites))
+    app.add_handler(CommandHandler("favs", show_avialable_favorites))
     app.add_handler(registration)
     print("Start polling ...")
     app.run_polling()
