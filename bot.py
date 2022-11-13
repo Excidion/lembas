@@ -2,7 +2,8 @@ from telegram.ext import Application, MessageHandler, CommandHandler, Conversati
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from dotenv import load_dotenv
 import os
-from tgtg import TgtgClient
+from tgtg import TgtgClient, DEFAULT_ACCESS_TOKEN_LIFETIME
+from appclient import AppClient
 
 
 load_dotenv()
@@ -40,12 +41,12 @@ async def show_avialable_favorites(update, context):
         
 
 async def start_registration(update, context):
-    email = context.user_data.get("registration_email")
-    if email is None:
+    client = context.user_data.get("client")
+    if client is None:
         await update.message.reply_text("Which email address did you use to register at TGTG?")
         return 0
     else:
-        await update.message.reply_text(f"You are already registered with {email}. Please /unregister first.")
+        await update.message.reply_text(f"You are already registered with {client.registration_email}. Please /unregister first.")
         return ConversationHandler.END
 
 async def get_email(update, context):
@@ -59,11 +60,26 @@ async def get_email(update, context):
         await update.message.reply_text("Action canceled.")
         return ConversationHandler.END
     else:
-        context.user_data["registration_email"] = response
-        client = TgtgClient(**credentials, access_token_lifetime = 3600)
+        client = AppClient(**credentials)
+        client.registration_email = response
         context.user_data["client"] = client
+        context.job_queue.run_repeating(
+            callback = refresh_login,
+            interval = DEFAULT_ACCESS_TOKEN_LIFETIME * 0.75,
+            chat_id = update.message.chat_id,
+            name = f"{update.message.chat_id}_refreshlogin",
+        )
         await update.message.reply_text("Registration successful!")
         return ConversationHandler.END
+
+async def refresh_login(context):
+    try:
+        context.job.context.user_data.get("client").refresh_token()
+    except Exception as e:
+        await context.bot.send_message(
+            chat_id = context.job.chat_id, 
+            text = f"Error with login: {e}",
+        )
 
 async def cancel(update, context):
     await update.message.reply_text(
@@ -83,7 +99,6 @@ registration = ConversationHandler(
 
 
 if __name__ == "__main__":
-
     builder = Application.builder()
     builder.token(os.getenv("telegram_access_token"))
     builder.persistence(persistence = PicklePersistence(filepath = "storage.pkl"))
