@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import os
 from tgtg import TgtgClient, DEFAULT_ACCESS_TOKEN_LIFETIME
 from appclient import AppClient
+from pickle import load
 
 
 load_dotenv()
@@ -89,6 +90,27 @@ async def cancel(update, context):
     return ConversationHandler.END
 
 
+def restart_jobs(app):
+    users = load_user_data()
+    for chat_id in users.keys():
+        app.job_queue.run_repeating(
+            callback = refresh_login,
+            interval = DEFAULT_ACCESS_TOKEN_LIFETIME * 0.75,
+            chat_id = chat_id,
+            name = f"{chat_id}_refreshlogin",
+        )
+
+def load_user_data():
+    with open("storage.pkl", "rb") as file:
+        storage = load(file)
+    return storage.get("user_data")
+    
+async def show_jobs(update, context):
+    for job in context.job_queue.jobs():
+        if job.chat_id == update.message.chat_id:
+            await update.message.reply_text(job.name)
+
+
 registration = ConversationHandler(
     entry_points = [CommandHandler("register", start_registration)],
     states = {
@@ -105,6 +127,8 @@ if __name__ == "__main__":
     app = builder.build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("favs", show_avialable_favorites))
+    app.add_handler(CommandHandler("jobs", show_jobs))
     app.add_handler(registration)
+    restart_jobs(app) # since jobs are not persisted, they have to be seperatly restarted
     print("Start polling ...")
     app.run_polling()
