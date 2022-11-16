@@ -64,14 +64,17 @@ async def get_email(update, context):
         client = AppClient(**credentials)
         client.registration_email = response
         context.user_data["client"] = client
-        context.job_queue.run_repeating(
-            callback = refresh_login,
-            interval = DEFAULT_ACCESS_TOKEN_LIFETIME * 0.75,
-            chat_id = update.message.chat_id,
-            name = f"{update.message.chat_id}_refreshlogin",
-        )
+        create_refreshlogin_job(context.job_queue, update.message.chat_id)
         await update.message.reply_text("Registration successful!")
         return ConversationHandler.END
+
+def create_refreshlogin_job(job_queue, chat_id):
+    job_queue.run_repeating(
+        callback = refresh_login,
+        interval = DEFAULT_ACCESS_TOKEN_LIFETIME * 0.75,
+        chat_id = chat_id,
+        name = f"{chat_id}_refreshlogin",
+    )
 
 async def refresh_login(context):
     try:
@@ -93,12 +96,7 @@ async def cancel(update, context):
 def restart_jobs(app):
     users = load_user_data()
     for chat_id in users.keys():
-        app.job_queue.run_repeating(
-            callback = refresh_login,
-            interval = DEFAULT_ACCESS_TOKEN_LIFETIME * 0.75,
-            chat_id = chat_id,
-            name = f"{chat_id}_refreshlogin",
-        )
+        create_refreshlogin_job(app.job_queue, chat_id)
 
 def load_user_data():
     with open("storage.pkl", "rb") as file:
