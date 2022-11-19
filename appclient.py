@@ -23,5 +23,18 @@ class AppClient(TgtgClient):
     def refresh_token(self):
         return self.login()
 
-    def get_item_texts(self):
-        pass
+    def get_item_texts(self, show_unavailable=False):
+        for item in self.get_items():
+            if (item.get("items_available") > 0) or show_unavailable:
+                yield make_item_text(item)
+
+    def get_new_items_texts(self):
+        for item in self.get_new_items():
+            yield make_item_text(item)
+
+    def get_new_items(self):
+        pass # TODO
+
+
+def make_item_text(item):
+    return "placeholder"
