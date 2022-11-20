@@ -62,12 +62,13 @@ def create_refreshlogin_job(job_queue, chat_id):
         callback = refresh_login,
         interval = DEFAULT_ACCESS_TOKEN_LIFETIME * 0.75,
         chat_id = chat_id,
+        user_id = chat_id,
         name = f"{chat_id}_refreshlogin",
     )
 
 async def refresh_login(context):
     try:
-        context.job.context.user_data.get("client").refresh_token()
+        context.user_data.get("client").refresh_token()
     except Exception as e:
         await context.bot.send_message(
             chat_id = context.job.chat_id, 
