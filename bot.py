@@ -79,12 +79,13 @@ def create_sendnewitems_job(job_queue, chat_id):
         callback = send_new_items,
         interval = 15 * 60,
         chat_id = chat_id,
+        user_id = chat_id,
         name = f"{chat_id}_sendnewitems",
     )
 
 async def send_new_items(context):
     try:
-        messages = context.job.context.user_data.get("client").get_new_item_texts()
+        messages = context.user_data.get("client").get_new_item_texts()
     except Exception as e:
         await context.bot.send_message(
             chat_id = context.job.chat_id, 
