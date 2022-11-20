@@ -110,10 +110,14 @@ def restart_jobs(app):
         create_sendnewitems_job(app.job_queue, chat_id)
 
 def load_user_data():
-    with open("storage.pkl", "rb") as file:
-        storage = load(file)
-    return storage.get("user_data")
-    
+    try:
+        with open("storage.pkl", "rb") as file:
+            storage = load(file)
+        return storage.get("user_data")
+    except FileNotFoundError:
+        return dict()
+
+
 async def show_jobs(update, context):
     for job in context.job_queue.jobs():
         if job.chat_id == update.message.chat_id:
