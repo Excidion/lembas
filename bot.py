@@ -68,7 +68,7 @@ def create_refreshlogin_job(job_queue, chat_id):
 
 async def refresh_login(context):
     try:
-        context.user_data.get("client").refresh_token()
+        context.user_data.get("client").login()
     except Exception as e:
         await context.bot.send_message(
             chat_id = context.job.chat_id, 

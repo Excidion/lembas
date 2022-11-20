@@ -24,9 +24,6 @@ class AppClient(TgtgClient):
         assert self.registration_email is not None, "Property not set. Nothing to delete."
         del self._registration_email
 
-    def refresh_token(self):
-        return self.login()
-
     def get_item_texts(self, show_unavailable=False):
         for item in self.get_items():
             if (item.get("items_available") > 0) or show_unavailable:
