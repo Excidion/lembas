@@ -93,6 +93,14 @@ async def cancel(update, context):
     return ConversationHandler.END
 
 
+async def unregister(update, context):
+    context.user_data.clear()
+    for job in context.job_queue.jobs():
+        if job.chat_id == update.message.chat_id:
+            job.schedule_removal()
+    await update.message.reply_text("All user data deleted.")
+
+
 def restart_jobs(app):
     users = load_user_data()
     for chat_id in users.keys():
@@ -127,6 +135,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("favs", show_avialable_favorites))
     app.add_handler(CommandHandler("jobs", show_jobs))
     app.add_handler(registration)
+    app.add_handler(CommandHandler("unregister", unregister))
     restart_jobs(app) # since jobs are not persisted, they have to be seperatly restarted
     print("Start polling ...")
     app.run_polling()
