@@ -26,20 +26,8 @@ async def start(update, context):
 
 async def show_avialable_favorites(update, context):
     client = context.user_data.get("client")
-    items = client.get_items()
-    for item in items:
-        items_available = item["items_available"]
-        if items_available > 0:
-            store_name = item["store"]["store_name"]
-            store_address = item["store"]["store_location"]["address"]["address_line"]
-            item_name = item["item"]["name"]
-            item_category = item["item"]["item_category"]
-            item_price = item["item"]["price_including_taxes"]["minor_units"] / (10**item["item"]["price_including_taxes"]["decimals"])
-            await update.message.reply_text(f"{store_name} has {items_available} {item_name or item_category} avaiable for {item_price}€ each.")
-            pickup_start = item["pickup_interval"]["start"]
-            pickup_end = item["pickup_interval"]["end"]
-            await update.message.reply_text(f"You can pick it up at {store_address} from {pickup_start} to {pickup_end}")
-        
+    for message in client.get_item_texts():
+        await update.message.reply_text(text=message)
 
 async def start_registration(update, context):
     client = context.user_data.get("client")
@@ -65,6 +53,7 @@ async def get_email(update, context):
         client.registration_email = response
         context.user_data["client"] = client
         create_refreshlogin_job(context.job_queue, update.message.chat_id)
+        create_sendnewitems_job(context.job_queue, update.message.chat_id)
         await update.message.reply_text("Registration successful!")
         return ConversationHandler.END
 
@@ -73,17 +62,39 @@ def create_refreshlogin_job(job_queue, chat_id):
         callback = refresh_login,
         interval = DEFAULT_ACCESS_TOKEN_LIFETIME * 0.75,
         chat_id = chat_id,
+        user_id = chat_id,
         name = f"{chat_id}_refreshlogin",
     )
 
 async def refresh_login(context):
     try:
-        context.job.context.user_data.get("client").refresh_token()
+        context.user_data.get("client").login()
     except Exception as e:
         await context.bot.send_message(
             chat_id = context.job.chat_id, 
             text = f"Error with login: {e}",
         )
+
+def create_sendnewitems_job(job_queue, chat_id):
+    job_queue.run_repeating(
+        callback = send_new_items,
+        interval = 15 * 60,
+        chat_id = chat_id,
+        user_id = chat_id,
+        name = f"{chat_id}_sendnewitems",
+    )
+
+async def send_new_items(context):
+    try:
+        messages = context.user_data.get("client").get_new_item_texts()
+    except Exception as e:
+        await context.bot.send_message(
+            chat_id = context.job.chat_id, 
+            text = f"Error with login: {e}",
+        )
+    else:
+        for text in messages:
+            await context.bot.send_message(chat_id=context.job.chat_id, text=text)
 
 async def cancel(update, context):
     await update.message.reply_text(
@@ -105,12 +116,17 @@ def restart_jobs(app):
     users = load_user_data()
     for chat_id in users.keys():
         create_refreshlogin_job(app.job_queue, chat_id)
+        create_sendnewitems_job(app.job_queue, chat_id)
 
 def load_user_data():
-    with open("storage.pkl", "rb") as file:
-        storage = load(file)
-    return storage.get("user_data")
-    
+    try:
+        with open("storage.pkl", "rb") as file:
+            storage = load(file)
+        return storage.get("user_data")
+    except FileNotFoundError:
+        return dict()
+
+
 async def show_jobs(update, context):
     for job in context.job_queue.jobs():
         if job.chat_id == update.message.chat_id:
