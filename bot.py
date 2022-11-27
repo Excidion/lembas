@@ -17,7 +17,7 @@ async def start(update, context):
         "These commands will help you get started:",
         "/start - shows this message",
         "/register - connect your TGTG account",
-        "/unregister - disconnect your TGTG account",
+        "/forgetme - disconnect your TGTG account from the bot",
         "These commands will help you get food:",
         "/favs - Display currently available offers from your favorites.",
     ])
@@ -45,7 +45,7 @@ async def start_registration(update, context):
 async def get_email(update, context):
     response = update.message.text
     await update.message.reply_text(f"You should now receive an email from TGTG to your inbox ({response}).")
-    await update.message.reply_text("Please click on the link in the email to confirm you are the rightful owner of the account.")
+    await update.message.reply_markdown("Please open your emails *on your computer* and click on the link in the email to confirm that you are the rightful owner of the TGTG account. (Opening the email on your phone will not work if you already have the app installed.)")
     try:
         credentials = TgtgClient(email=response).get_credentials()
     except Exception as e:
@@ -59,6 +59,7 @@ async def get_email(update, context):
         create_refreshlogin_job(context.job_queue, update.message.chat_id)
         create_sendnewitems_job(context.job_queue, update.message.chat_id)
         await update.message.reply_text("Registration successful!")
+        await update.message.reply_text("From now on I will check regularly for updates on your favorite shops and notify you whenever some goods are available! :) ")
         return ConversationHandler.END
 
 def create_refreshlogin_job(job_queue, chat_id):
@@ -113,7 +114,7 @@ async def unregister(update, context):
     for job in context.job_queue.jobs():
         if job.chat_id == update.message.chat_id:
             job.schedule_removal()
-    await update.message.reply_text("All user data deleted.")
+    await update.message.reply_text("All user data deleted from my memory.")
 
 
 def restart_jobs(app):
@@ -155,7 +156,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("favs", show_avialable_favorites))
     app.add_handler(CommandHandler("jobs", show_jobs))
     app.add_handler(registration)
-    app.add_handler(CommandHandler("unregister", unregister))
+    app.add_handler(CommandHandler("forgetme", unregister))
     restart_jobs(app) # since jobs are not persisted, they have to be seperatly restarted
     print("Start polling ...")
     app.run_polling()
