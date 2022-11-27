@@ -26,8 +26,12 @@ async def start(update, context):
 
 async def show_avialable_favorites(update, context):
     client = context.user_data.get("client")
+    favorites_available = 0
     for message in client.get_item_texts():
         await update.message.reply_text(text=message)
+        favorites_available += 1
+    if favorites_available == 0:
+        await update.message.reply_text(text="I'm sorry but your favorites don't have anything to offer right now :(")
 
 async def start_registration(update, context):
     client = context.user_data.get("client")
