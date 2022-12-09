@@ -1,6 +1,5 @@
 from tgtg import TgtgClient, TgtgAPIError
 from datetime import datetime
-from datetime import datetime
 from pytz import timezone as tz
 
 class AppClient(TgtgClient):
