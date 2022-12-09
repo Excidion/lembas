@@ -124,6 +124,8 @@ async def unregister(update, context):
 def restart_jobs(app):
     users = load_user_data()
     for chat_id in users.keys():
+        if users.get(chat_id).get("client") is None:
+            continue # ignore users without saved client
         create_refreshlogin_job(app.job_queue, chat_id)
         create_sendnewitems_job(app.job_queue, chat_id)
 
