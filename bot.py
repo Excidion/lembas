@@ -28,7 +28,7 @@ async def show_avialable_favorites(update, context):
     client = context.user_data.get("client")
     favorites_available = 0
     for message in client.get_item_texts():
-        await update.message.reply_text(text=message)
+        await update.message.reply_markdown(text=message)
         favorites_available += 1
     if favorites_available == 0:
         await update.message.reply_text(text="I'm sorry but your favorites don't have anything to offer right now :(")
@@ -99,7 +99,11 @@ async def send_new_items(context):
         )
     else:
         for text in messages:
-            await context.bot.send_message(chat_id=context.job.chat_id, text=text)
+            await context.bot.send_message(
+                chat_id = context.job.chat_id, 
+                text = text,
+                parse_mode = "MarkdownV2",
+            )
 
 async def cancel(update, context):
     await update.message.reply_text(
