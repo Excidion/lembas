@@ -58,8 +58,8 @@ def make_item_text(item):
     pickup_end = datetime.strptime(item["pickup_interval"]["end"], "%Y-%m-%dT%H:%M:%S%z").astimezone(tz(timezone))
     pickup_today = datetime.today() == pickup_start.date()
     on = "" if pickup_today else f"on {pickup_start.date()} "
-    msg0 = f"*{store_name}* has {items_available} {item_name or item_category} available for {item_price:.2f} {currency} each."
+    msg0 = f"<b>{store_name}</b> has {items_available} {item_name or item_category} available for {item_price:.2f} {currency} each."
     msg1 = f"You can pick it up from {pickup_start.time().strftime('%H:%M')} to {pickup_end.time().strftime('%H:%M')} {on}at {store_address}."
     item_id = item["item"]["item_id"]
-    link = f"[Grab it\!](https://share.toogoodtogo.com/item/{item_id}/)"
+    link = f'<a href="https://share.toogoodtogo.com/item/{item_id}/">Grab it!</a>'
     return f"{msg0}\n{msg1}\n{link}"

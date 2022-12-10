@@ -30,7 +30,7 @@ async def show_avialable_favorites(update, context):
     for message in client.get_item_texts():
         await update.message.reply_text(
             text = message,
-            parse_mode = "MarkdownV2",
+            parse_mode = "HTML",
             disable_web_page_preview = True,
         )
         favorites_available += 1
@@ -106,7 +106,7 @@ async def send_new_items(context):
             await context.bot.send_message(
                 chat_id = context.job.chat_id, 
                 text = text,
-                parse_mode = "MarkdownV2",
+                parse_mode = "HTML",
                 disable_web_page_preview = True,
             )
 
