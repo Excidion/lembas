@@ -2,7 +2,7 @@
 Telegram bot that notifies you, when there are new offers from your favorites on the "Too Good To Go" app.
 
 ## Get Started
-Developed with Python 3.10.
+Requires Python 3.7+.
 
 + `pip install -r requirements.txt`
 
