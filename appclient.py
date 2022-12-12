@@ -25,6 +25,23 @@ class AppClient(TgtgClient):
         assert self.registration_email is not None, "Property not set. Nothing to delete."
         del self._registration_email
 
+    def get_scheduled_items_times(self):
+        for item in self.get_scheduled_items():
+            next_sale = item.get("next_sales_window_purchase_start")
+            timezone = item.get("store").get("store_time_zone")
+            next_sale = datetime.strptime(next_sale, "%Y-%m-%dT%H:%M:%S%z").astimezone(tz(timezone))
+            yield next_sale
+
+    def get_scheduled_items(self):
+        for item in self.get_items():
+            if item.get("items_available") > 0:
+                continue # don't consider available ones
+            # fetching with the get_item method returns more datapoints - one of which we need 
+            item = self.get_item(item.get("item").get("item_id"))
+            next_sale = item.get("next_sales_window_purchase_start")
+            if next_sale is not None: # only use ones that have a scheduled date
+                yield item 
+            
     def get_item_texts(self, show_unavailable=False):
         for item in self.get_items():
             if (item.get("items_available") > 0) or show_unavailable:

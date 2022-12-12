@@ -5,6 +5,7 @@ import os
 from tgtg import TgtgClient, DEFAULT_ACCESS_TOKEN_LIFETIME
 from appclient import AppClient
 from pickle import load
+from datetime import timedelta
 
 
 load_dotenv()
@@ -62,6 +63,7 @@ async def get_email(update, context):
         context.user_data["client"] = client
         create_refreshlogin_job(context.job_queue, update.message.chat_id)
         create_sendnewitems_job(context.job_queue, update.message.chat_id)
+        create_spawnscheduledreminders_job(context.job_queue, update.message.chat_id)
         await update.message.reply_text("Registration successful!")
         await update.message.reply_text("From now on I will check regularly for updates on your favorite shops and notify you whenever some goods are available! :) ")
         return ConversationHandler.END
@@ -110,6 +112,32 @@ async def send_new_items(context):
                 disable_web_page_preview = True,
             )
 
+def create_spawnscheduledreminders_job(job_queue, chat_id):
+    job_queue.run_repeating(
+        callback = spawn_scheduled_reminders,
+        first = 1, # run once directly
+        interval = timedelta(hours=3),
+        chat_id = chat_id,
+        user_id = chat_id,
+        name = f"{chat_id}_spawnscheduledreminders",
+    )
+
+async def spawn_scheduled_reminders(context):
+    existing_scheduled_remidners = [
+        j.next_t for j in context.job_queue.jobs() 
+        if (j.chat_id == context.job.chat_id) and (j.callback == send_new_items)
+    ]
+    for time in context.user_data.get("client").get_scheduled_items_times():
+        time += timedelta(seconds=10) # give TGTG some buffer
+        if time not in existing_scheduled_remidners:
+            context.job_queue.run_once(
+                callback = send_new_items,
+                when = time,
+                chat_id = context.job.chat_id,
+                user_id = context.job.chat_id,
+                name = f"{context.job.chat_id}_scheduledsendnewitems_{time.isoformat()}",
+            )
+    
 async def cancel(update, context):
     await update.message.reply_text(
         "Okay, action was canceled.", 
@@ -133,6 +161,7 @@ def restart_jobs(app):
             continue # ignore users without saved client
         create_refreshlogin_job(app.job_queue, chat_id)
         create_sendnewitems_job(app.job_queue, chat_id)
+        create_spawnscheduledreminders_job(app.job_queue, chat_id)
 
 def load_user_data():
     try:
