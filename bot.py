@@ -89,7 +89,8 @@ async def refresh_login(context):
 def create_sendnewitems_job(job_queue, chat_id):
     job_queue.run_repeating(
         callback = send_new_items,
-        interval = 15 * 60,
+        first = 1, # run once directly
+        interval = timedelta(minutes=15),
         chat_id = chat_id,
         user_id = chat_id,
         name = f"{chat_id}_sendnewitems",
