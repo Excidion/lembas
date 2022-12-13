@@ -124,19 +124,22 @@ def create_spawnscheduledreminders_job(job_queue, chat_id):
     )
 
 async def spawn_scheduled_reminders(context):
-    existing_scheduled_remidners = [
-        j.next_t for j in context.job_queue.jobs() 
-        if (j.chat_id == context.job.chat_id) and (j.callback == send_new_items)
-    ]
     for time in context.user_data.get("client").get_scheduled_items_times():
-        time += timedelta(seconds=10) # give TGTG some buffer
-        if time not in existing_scheduled_remidners:
+        # recollect all existing jobs to avoid collisions with newly scheduled
+        existing_scheduled_remidners = [
+            j.next_t for j in context.job_queue.jobs() 
+            if (j.chat_id == context.job.chat_id) and (j.callback == send_new_items)
+        ]
+        if time in existing_scheduled_remidners:
+            continue # skip if a reminder for that time is already scheduled
+        for buffer in [0, 30, 60]: # retry after expected timepoint (in seconds)
+            when = time + timedelta(seconds=buffer)
             context.job_queue.run_once(
                 callback = send_new_items,
-                when = time,
+                when = when,
                 chat_id = context.job.chat_id,
                 user_id = context.job.chat_id,
-                name = f"{context.job.chat_id}_scheduledsendnewitems_{time.isoformat()}",
+                name = f"{context.job.chat_id}_scheduledsendnewitems_{when.isoformat()}",
             )
     
 async def cancel(update, context):
