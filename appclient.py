@@ -55,9 +55,9 @@ class AppClient(TgtgClient):
         for item in self.get_items():
             item_id = item.get("item").get("item_id")
             items_available = item.get("items_available")
-            items_available_before = self.memory.setdefault(item_id, 0)
+            items_available_before = self.memory.get(item_id, 0)
+            self.memory[item_id] = items_available
             if items_available > items_available_before:
-                self.memory[item_id] = items_available
                 yield item
 
 
